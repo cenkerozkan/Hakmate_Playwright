@@ -7,11 +7,13 @@ import re
 import os
 from dotenv import load_dotenv
 from playwright.sync_api import Page, expect, Locator
+from decorators.time_decorator import timeout_decorator
 
 # Note for myself: URLs always should start with http or https.
 BASE_URL: str = "https://hakmate-frontend.vercel.app"
 load_dotenv()
 
+@timeout_decorator
 def test_landing_page_title(page: Page):
     """
     Goes to the landing page of hakmate vercel application.
@@ -21,6 +23,7 @@ def test_landing_page_title(page: Page):
 
     expect(page).to_have_title("HakMate")
 
+@timeout_decorator
 def test_landing_page_login_button(page: Page):
     """
     Clicks the login button on the landing page.
@@ -38,6 +41,7 @@ def test_landing_page_login_button(page: Page):
     expect(page.get_by_text(text="Lütfen geçerli bir e-posta adresi giriniz")).to_be_visible()
     expect(page.get_by_text(text="Şifre en az 6 karakter uzunluğunda olmalıdır")).to_be_visible()
 
+@timeout_decorator
 def test_login_with_user(page: Page):
     """
     Goes to login screen, fills the email and password
@@ -58,8 +62,8 @@ def test_login_with_user(page: Page):
     buttons.nth(0).click()
 
     expect(page.get_by_text(text=re.compile(r"^Hoş geldiniz.*"))).to_be_visible()
-    page.wait_for_timeout(3000)
 
+@timeout_decorator
 def test_chat_screen_with_anon(page: Page):
     """
     Goes to chat screen without an account, and
@@ -81,7 +85,7 @@ def test_chat_screen_with_anon(page: Page):
     # Check if the chat is created or not.
     expect(page.get_by_text(text="Playwright Test!")).to_be_visible()
 
-
+@timeout_decorator
 def test_chat_screen_anon_response(page: Page):
     """
     This one goes to anonymous chat, creates a new chat.
@@ -114,12 +118,10 @@ def test_chat_screen_anon_response(page: Page):
     buttons = page.get_by_role(role="button")
     buttons.nth(5).click() # 5th button is for sending a message.
 
-    # Wait for 5 seconds
-    page.wait_for_timeout(3000)
-
     # Now we are expecting response with this class id.
     expect(page.locator(f"css={re.compile(r"MuiBox")}")).to_be_visible()
 
+@timeout_decorator
 def test_register_function_with_existing_account(page: Page):
     """
     This method tries to register to the platfrom with an already
@@ -146,9 +148,8 @@ def test_register_function_with_existing_account(page: Page):
     register_button.nth(1).click()
 
     expect(page.get_by_text(text=re.compile("Hata!.*"))).to_be_visible()
-    page.wait_for_timeout(3000)
 
-
+@timeout_decorator
 def test_register_function(page: Page):
     page.goto(BASE_URL)
 
@@ -171,8 +172,8 @@ def test_register_function(page: Page):
     register_button.nth(1).click()
 
     expect(page.get_by_text(text=re.compile("yönlendiriliyorsunuz.*"))).to_be_visible()
-    page.wait_for_timeout(3000)
 
+@timeout_decorator
 def test_chat_with_existing_account(page: Page):
     page.goto(BASE_URL)
 
@@ -187,12 +188,9 @@ def test_chat_with_existing_account(page: Page):
 
     login_button: Locator = page.get_by_role(role="button", name="Giriş Yap")
     login_button.click()
-    page.wait_for_timeout(2000)
 
     expect(page.get_by_text(text=re.compile("Giriş Başarılı.*"))).to_be_visible()
 
     # Locate the chat button on main page navbar.
     chat_button: Locator = page.get_by_role(role="button", name="Chat")
     chat_button.click()
-
-    page.wait_for_timeout(2000)
