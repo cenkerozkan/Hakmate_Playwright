@@ -58,7 +58,7 @@ def test_login_with_user(page: Page):
     buttons.nth(0).click()
 
     expect(page.get_by_text(text=re.compile(r"^Hoş geldiniz.*"))).to_be_visible()
-    time.sleep(6)
+    page.wait_for_timeout(3000)
 
 def test_chat_screen_with_anon(page: Page):
     """
@@ -115,7 +115,7 @@ def test_chat_screen_anon_response(page: Page):
     buttons.nth(5).click() # 5th button is for sending a message.
 
     # Wait for 5 seconds
-    time.sleep(6)
+    page.wait_for_timeout(3000)
 
     # Now we are expecting response with this class id.
     expect(page.locator(f"css={re.compile(r"MuiBox")}")).to_be_visible()
@@ -146,7 +146,7 @@ def test_register_function_with_existing_account(page: Page):
     register_button.nth(1).click()
 
     expect(page.get_by_text(text=re.compile("Hata!.*"))).to_be_visible()
-    time.sleep(2)
+    page.wait_for_timeout(3000)
 
 
 def test_register_function(page: Page):
@@ -171,4 +171,28 @@ def test_register_function(page: Page):
     register_button.nth(1).click()
 
     expect(page.get_by_text(text=re.compile("yönlendiriliyorsunuz.*"))).to_be_visible()
-    time.sleep(2)
+    page.wait_for_timeout(3000)
+
+def test_chat_with_existing_account(page: Page):
+    page.goto(BASE_URL)
+
+    # Let's go to login screen
+    page.get_by_role(role="button", name="Giriş Yap")
+    page.wait_for_timeout(1000)
+
+    text_areas: Locator = page.get_by_role(role="textbox")
+
+    text_areas.nth(0).fill(os.getenv("HAKMATE_EMAIL"))
+    text_areas.nth(1).fill(os.getenv("HAKMATE_PASSWORD"))
+
+    login_button: Locator = page.get_by_role(role="button", name="Giriş Yap")
+    login_button.click()
+    page.wait_for_timeout(2000)
+
+    expect(page.get_by_text(text=re.compile("Giriş Başarılı.*"))).to_be_visible()
+
+    # Locate the chat button on main page navbar.
+    chat_button: Locator = page.get_by_role(role="button", name="Chat")
+    chat_button.click()
+
+    page.wait_for_timeout(2000)
