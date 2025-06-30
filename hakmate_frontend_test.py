@@ -7,13 +7,13 @@ import re
 import os
 from dotenv import load_dotenv
 from playwright.sync_api import Page, expect, Locator
-from decorators.time_decorator import timeout_decorator
+from decorators.with_timeout import with_timeout
 
 # Note for myself: URLs always should start with http or https.
 BASE_URL: str = "https://hakmate-frontend.vercel.app"
 load_dotenv()
 
-@timeout_decorator
+@with_timeout
 def test_landing_page_title(page: Page):
     """
     Goes to the landing page of hakmate vercel application.
@@ -23,7 +23,7 @@ def test_landing_page_title(page: Page):
 
     expect(page).to_have_title("HakMate")
 
-@timeout_decorator
+@with_timeout
 def test_landing_page_login_button(page: Page):
     """
     Clicks the login button on the landing page.
@@ -41,7 +41,7 @@ def test_landing_page_login_button(page: Page):
     expect(page.get_by_text(text="Lütfen geçerli bir e-posta adresi giriniz")).to_be_visible()
     expect(page.get_by_text(text="Şifre en az 6 karakter uzunluğunda olmalıdır")).to_be_visible()
 
-@timeout_decorator
+@with_timeout
 def test_login_with_user(page: Page):
     """
     Goes to login screen, fills the email and password
@@ -63,7 +63,7 @@ def test_login_with_user(page: Page):
 
     expect(page.get_by_text(text=re.compile(r"^Hoş geldiniz.*"))).to_be_visible()
 
-@timeout_decorator
+@with_timeout
 def test_chat_screen_with_anon(page: Page):
     """
     Goes to chat screen without an account, and
@@ -85,7 +85,7 @@ def test_chat_screen_with_anon(page: Page):
     # Check if the chat is created or not.
     expect(page.get_by_text(text="Playwright Test!")).to_be_visible()
 
-@timeout_decorator
+@with_timeout
 def test_chat_screen_anon_response(page: Page):
     """
     This one goes to anonymous chat, creates a new chat.
@@ -118,10 +118,9 @@ def test_chat_screen_anon_response(page: Page):
     buttons = page.get_by_role(role="button")
     buttons.nth(5).click() # 5th button is for sending a message.
 
-    # Now we are expecting response with this class id.
-    expect(page.locator(f"css={re.compile(r"MuiBox")}")).to_be_visible()
+    expect(page.locator("div.MuiPaper-root.MuiPaper-elevation.MuiPaper-rounded.MuiPaper-elevation1.css-3r73yh"))
 
-@timeout_decorator
+@with_timeout
 def test_register_function_with_existing_account(page: Page):
     """
     This method tries to register to the platfrom with an already
@@ -149,7 +148,7 @@ def test_register_function_with_existing_account(page: Page):
 
     expect(page.get_by_text(text=re.compile("Hata!.*"))).to_be_visible()
 
-@timeout_decorator
+@with_timeout
 def test_register_function(page: Page):
     page.goto(BASE_URL)
 
@@ -173,24 +172,43 @@ def test_register_function(page: Page):
 
     expect(page.get_by_text(text=re.compile("yönlendiriliyorsunuz.*"))).to_be_visible()
 
-@timeout_decorator
+@with_timeout
 def test_chat_with_existing_account(page: Page):
     page.goto(BASE_URL)
 
     # Let's go to login screen
-    page.get_by_role(role="button", name="Giriş Yap")
-    page.wait_for_timeout(1000)
+    page.get_by_role(role="button", name="Giriş Yap").click()
 
     text_areas: Locator = page.get_by_role(role="textbox")
 
     text_areas.nth(0).fill(os.getenv("HAKMATE_EMAIL"))
     text_areas.nth(1).fill(os.getenv("HAKMATE_PASSWORD"))
 
-    login_button: Locator = page.get_by_role(role="button", name="Giriş Yap")
-    login_button.click()
+    login_buttons: Locator = page.get_by_role(role="button", name="Giriş Yap")
+    login_buttons.nth(1).click()
 
-    expect(page.get_by_text(text=re.compile("Giriş Başarılı.*"))).to_be_visible()
+    page.wait_for_timeout(2000)
 
-    # Locate the chat button on main page navbar.
     chat_button: Locator = page.get_by_role(role="button", name="Chat")
     chat_button.click()
+
+    chat_page_text_boxes: Locator = page.get_by_role(role="textbox")
+    chat_page_buttons: Locator = page.get_by_role(role="button")
+
+    chat_page_text_boxes.nth(0).fill("Playwright test with an account!")
+    chat_page_buttons.nth(2).click()
+
+    # Now click select the chat
+    page.get_by_text(text="Playwright test with an account!").click()
+
+    # ChatGPT gave me this solution for components that has multiple CSS
+    # classes. Yet I couldn't find a similar example in playwright docs.
+    chat_page_text_boxes.nth(1).fill("This is a simple test message sent by Playwright.")
+    send_button: Locator = page.locator("button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-colorPrimary."
+                                        "MuiIconButton-edgeEnd.MuiIconButton-sizeMedium.css-1tiuozg")
+
+    send_button.click()
+
+    expect(page.locator("div.MuiPaper-root.MuiPaper-elevation.MuiPaper-rounded.MuiPaper-elevation1.css-3r73yh"))
+
+    page.wait_for_timeout(3000)
