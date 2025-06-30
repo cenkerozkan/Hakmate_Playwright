@@ -57,6 +57,9 @@ def test_login_with_user(page: Page):
     buttons:Locator = page.get_by_role(role="button", name="Giriş Yap")
     buttons.nth(0).click()
 
+    expect(page.get_by_text(text=re.compile(r"^Hoş geldiniz.*"))).to_be_visible()
+    time.sleep(6)
+
 def test_chat_screen_with_anon(page: Page):
     """
     Goes to chat screen without an account, and
@@ -112,7 +115,60 @@ def test_chat_screen_anon_response(page: Page):
     buttons.nth(5).click() # 5th button is for sending a message.
 
     # Wait for 5 seconds
-    time.sleep(5)
+    time.sleep(6)
 
     # Now we are expecting response with this class id.
-    expect(page.locator("css=[class^MuiBox]"))
+    expect(page.locator(f"css={re.compile(r"MuiBox")}")).to_be_visible()
+
+def test_register_function_with_existing_account(page: Page):
+    """
+    This method tries to register to the platfrom with an already
+    existing account, and expects an error on the web page.
+    """
+    page.goto(BASE_URL)
+
+    page.get_by_role(role="button", name="Kayıt ol").click()
+
+    # When user clicks, we expect a header that says "Kayıt Ol"
+    expect(page.get_by_role(role="heading", name="Kayıt Ol")).to_be_visible()
+
+    # Let's take text_boxes, register button and consent checkbox
+    text_boxes: Locator = page.get_by_role(role="textbox")
+    register_button: Locator = page.get_by_role(role="button", name="Kayıt Ol")
+    check_box: Locator = page.get_by_role(role="checkbox", name=re.compile(r"Kişisel verilerinizin.*"))
+
+    # Complete all the necessary steps
+    text_boxes.nth(0).fill(value=os.getenv("HAKAMTE_EXISTING_NAME"))
+    text_boxes.nth(1).fill(value=os.getenv("HAKMATE_EXISTING_SURNAME"))
+    text_boxes.nth(2).fill(value=os.getenv("HAKMATE_EXISTING_EMAIL"))
+    text_boxes.nth(3).fill(value=os.getenv("HAKMATE_EXISTING_PASSWORD"))
+    check_box.check()
+    register_button.nth(1).click()
+
+    expect(page.get_by_text(text=re.compile("Hata!.*"))).to_be_visible()
+    time.sleep(2)
+
+
+def test_register_function(page: Page):
+    page.goto(BASE_URL)
+
+    page.get_by_role(role="button", name="Kayıt ol").click()
+
+    # When user clicks, we expect a header that says "Kayıt Ol"
+    expect(page.get_by_role(role="heading", name="Kayıt Ol")).to_be_visible()
+
+    # Let's take text_boxes, register button and consent checkbox
+    text_boxes: Locator = page.get_by_role(role="textbox")
+    register_button: Locator = page.get_by_role(role="button", name="Kayıt Ol")
+    check_box: Locator = page.get_by_role(role="checkbox", name=re.compile(r"Kişisel verilerinizin.*"))
+
+    # Complete all the necessary steps
+    text_boxes.nth(0).fill(value=os.getenv("HAKMATE_REGISTER_NAME"))
+    text_boxes.nth(1).fill(value=os.getenv("HAKMATE_REGISTER_SURNAME"))
+    text_boxes.nth(2).fill(value=os.getenv("HAKMATE_REGISTER_EMAIL"))
+    text_boxes.nth(3).fill(value=os.getenv("HAKMATE_REGISTER_PASSWORD"))
+    check_box.check()
+    register_button.nth(1).click()
+
+    expect(page.get_by_text(text=re.compile("yönlendiriliyorsunuz.*"))).to_be_visible()
+    time.sleep(2)
